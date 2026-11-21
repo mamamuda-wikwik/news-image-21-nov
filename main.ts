@@ -83,6 +83,14 @@ function run(): void {
   while (offset + 8 <= data.length) {
     const len = data.readUInt32BE(offset);
     const type = data.subarray(offset + 4, offset + 8).toString("ascii");
+    // A chunk's declared length must fit inside the file: length + type
+    // + data + CRC is 12 + len bytes from this chunk's start. A length
+    // that runs past the end means the file is truncated or corrupted,
+    // so fail loudly with the real cause instead of silently skipping
+    // to the end and misreporting it as a missing IDAT chunk.
+    if (offset + 12 + len > data.length) {
+      die(`chunk ${type} at offset ${offset} claims ${len} bytes, past end of file`);
+    }
     if (type === "IDAT") {
       sawIdat = true;
       break;
