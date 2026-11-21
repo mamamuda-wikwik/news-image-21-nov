@@ -66,6 +66,11 @@ function main(): void {
   if (width !== WANT_WIDTH || height !== WANT_HEIGHT) {
     fail(`entry.png is ${width}x${height}, expected ${WANT_WIDTH}x${WANT_HEIGHT}`);
   }
+  // A genuine PNG ends with a 12-byte IEND trailer: length 0, type IEND.
+  if (size < 12) fail("entry.png has no IEND trailer");
+  const tailLen = buf.readUInt32BE(size - 12);
+  const tailType = buf.toString("ascii", size - 8, size - 4);
+  if (tailLen !== 0 || tailType !== "IEND") fail("entry.png has no IEND trailer");
 
   const outDir = process.argv[2] ?? process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
   mkdirSync(outDir, { recursive: true });
